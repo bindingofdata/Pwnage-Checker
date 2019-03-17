@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Security;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -61,7 +63,46 @@ namespace PwndAPILib.ViewModel
 
         public static List<PwndPassword> GetPwndPasswords(string password)
         {
-            throw new NotImplementedException();
+            List<PwndPassword> passwords = new List<PwndPassword>();
+            SHA1 hasher = SHA1.Create();
+            byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
+            byte[] hashedBytes = hasher.ComputeHash(passwordBytes);
+            StringBuilder hashConverter = new StringBuilder();
+            foreach (byte b in hashedBytes)
+                hashConverter.Append(b.ToString("x2"));
+            string hashedPassword = hashConverter.ToString().ToUpper();
+            passwords.Add(new PwndPassword() { Hash = hashedPassword, OccuranceCount = -1 });
+            string hashPrefix = hashedPassword.Substring(0, 5);
+            string url = BASE_PASSWORD_URL + hashPrefix;
+
+            using (HttpClient client = new HttpClient())
+            {
+                client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
+                HttpResponseMessage response = client.GetAsync(url).Result;
+                response.EnsureSuccessStatusCode();
+                StringReader reader = new StringReader(response.Content.ReadAsStringAsync().Result);
+                string line = string.Empty;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    string[] result = line.Split(':');
+                    PwndPassword currentPassword;
+                    if (result.Length > 1)
+                        currentPassword = new PwndPassword()
+                        {
+                            Hash = hashPrefix + result[0],
+                            OccuranceCount = int.Parse(result[1])
+                        };
+                    else
+                        currentPassword = new PwndPassword() { Hash = "ERROR", OccuranceCount = 0 };
+
+                    if (currentPassword.Hash == passwords[0].Hash)
+                        passwords[0].OccuranceCount = currentPassword.OccuranceCount;
+                    else
+                        passwords.Add(currentPassword);
+                }
+            }
+
+            return passwords;
         }
     }
 }

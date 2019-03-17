@@ -51,6 +51,7 @@ namespace PwnCoreC
                 case "2":
                 case "p":
                     LookupPassword();
+                    PrintResult();
                     break;
                 case "3":
                 case "h":
@@ -79,7 +80,40 @@ namespace PwnCoreC
 
         private static void LookupPassword()
         {
-            throw new NotImplementedException();
+            Console.Clear();
+            Console.WriteLine("Enter the password you wish to look up.");
+            Console.Write("---> ");
+            string password = string.Empty;
+            ConsoleKeyInfo keyInfo;
+            do
+            {
+                keyInfo = Console.ReadKey(true);
+                if (keyInfo.Key != ConsoleKey.Backspace && keyInfo.Key != ConsoleKey.Enter)
+                {
+                    password += keyInfo.KeyChar;
+                    Console.Write("*");
+                }
+                else if (keyInfo.Key == ConsoleKey.Backspace && password.Length > 0)
+                {
+                    password = password.Substring(0, password.Length - 1);
+                    Console.Write("\b \b");
+                }
+            } while (keyInfo.Key != ConsoleKey.Enter);
+
+            PwndVM.CheckPassword(password, false);
+        }
+
+        private static void PrintResult()
+        {
+            Console.Clear();
+
+            if (PwndVM.PasswordMatch)
+                Console.WriteLine($"Your password was found " + PwndVM.Passwords[0].OccuranceCount + " times.");
+            else
+                Console.WriteLine("Your password was not found! Congrats!");
+
+            Console.WriteLine(pressToContinue);
+            Console.ReadKey();
         }
 
         private static void LookupUsernameOrEmail()
@@ -110,6 +144,7 @@ namespace PwnCoreC
 
             foreach (Breach breach in PwndVM.Breaches)
             {
+                Console.Clear();
                 currentResult.Clear();
                 currentResult.AppendFormat("~~~ Breach #{0}/{1} - {2} ~~~\n", breachCount, PwndVM.Breaches.Count, breach.Title);
                 currentResult.AppendFormat("Site Name: {0}\n", breach.Name);
