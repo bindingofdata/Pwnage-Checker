@@ -6,5 +6,7 @@ namespace PwndAPILib.Models
 {
     public class PwndPassword
     {
+        public string HashSuffix { get; set; }
+        public int OccuranceCount { get; set; }
     }
 }

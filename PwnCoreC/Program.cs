@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Text;
 
 using PwndAPILib.Models;
@@ -9,10 +10,13 @@ namespace PwnCoreC
     internal class Program
     {
         private static PwndVM PwndVM;
+        private const string pressToContinue = "press any key to continue...";
+        private static string accountName;
 
         private static void Main(string[] args)
         {
             PwndVM = new PwndVM();
+            accountName = string.Empty;
 
             bool exitApplication = false;
             while (!exitApplication)
@@ -28,26 +32,54 @@ namespace PwnCoreC
             StringBuilder message = new StringBuilder();
             message.Append("---=== Have You Been Pwnd? ===---\n\n");
             message.Append("Main Menu\n");
-            message.Append("1. Check [U]sername/[E]mail\n");
+            message.Append("1. Check [U]sername/Email\n");
             message.Append("2. Check [P]assword\n");
             message.Append("3. [H]elp\n");
             message.Append("4. [E]xit\n");
             message.Append("--> ");
             Console.Write(message.ToString());
 
-            switch (Console.ReadLine().ToLower())
+            string userSelection = Console.ReadLine().ToLower();
+
+            switch (userSelection ?? string.Empty)
             {
                 case "1":
                 case "u":
-                case "e":
                     LookupUsernameOrEmail();
                     PrintBreaches();
                     break;
+                case "2":
+                case "p":
+                    LookupPassword();
+                    break;
+                case "3":
+                case "h":
+                case "?":
+                    DisplayHelp();
+                    break;
+                case "4":
+                case "e":
+                case "q":
+                    exitApplication = true;
+                    break;
                 default:
+                    Console.Clear();
+                    Console.WriteLine("Unrecognized command. Please select an option from the menu.");
+                    Console.WriteLine(pressToContinue);
                     break;
             }
 
             return exitApplication;
+        }
+
+        private static void DisplayHelp()
+        {
+            throw new NotImplementedException();
+        }
+
+        private static void LookupPassword()
+        {
+            throw new NotImplementedException();
         }
 
         private static void LookupUsernameOrEmail()
@@ -55,7 +87,7 @@ namespace PwnCoreC
             Console.Clear();
             Console.WriteLine("Enter the username or email address to look up.");
             Console.Write("---> ");
-            string accountName = Console.ReadLine();
+            accountName = Console.ReadLine();
 
             PwndVM.GetBreaches(accountName, false);
         }
@@ -67,33 +99,93 @@ namespace PwnCoreC
                 Console.Clear();
                 Console.WriteLine("No breaches found!!!");
                 Console.WriteLine();
-                Console.WriteLine("press any key to continue...");
+                Console.WriteLine(pressToContinue);
                 Console.ReadKey();
                 return;
             }
 
-            StringBuilder results = new StringBuilder();
+            StringBuilder currentResult = new StringBuilder();
+            StringBuilder combinedResults = new StringBuilder();
             int breachCount = 1;
 
             foreach (Breach breach in PwndVM.Breaches)
             {
-                results.Clear();
-                results.AppendFormat("~~~ Breach #{0}/{1} - {2} ~~~\n", breachCount, PwndVM.Breaches.Count, breach.Title);
-                results.AppendFormat("Site Name: {0}\n", breach.Name);
-                results.AppendFormat("URL: {0}\n", breach.Domain);
-                results.AppendFormat("Date of Breach: {0}\n", breach.BreachDate);
-                results.AppendFormat("Date Added to DB: {0}\n", breach.AddedDate);
-                results.AppendFormat("Breached Data: \n");
+                currentResult.Clear();
+                currentResult.AppendFormat("~~~ Breach #{0}/{1} - {2} ~~~\n", breachCount, PwndVM.Breaches.Count, breach.Title);
+                currentResult.AppendFormat("Site Name: {0}\n", breach.Name);
+                currentResult.AppendFormat("URL: {0}\n", breach.Domain);
+                currentResult.AppendFormat("Date of Breach: {0}\n", breach.BreachDate);
+                currentResult.AppendFormat("Date Added to DB: {0}\n", breach.AddedDate);
+                currentResult.AppendFormat("Breached Data: \n");
                 foreach (string dataItem in breach.DataClasses)
                 {
-                    results.AppendFormat("---> {0}\n", dataItem);
+                    currentResult.AppendFormat("---> {0}\n", dataItem);
                 }
-                results.AppendFormat("Breach Verified: {0}\n", breach.IsVerified ? "True" : "False" );
-                results.AppendFormat("~~~~~~~~~~~~~~~~~~~~~~\n\n");
-                Console.WriteLine(results.ToString());
-                Console.WriteLine("press any key to continue...");
+                currentResult.AppendFormat("Breach Verified: {0}\n", breach.IsVerified ? "True" : "False" );
+                currentResult.AppendFormat("~~~~~~~~~~~~~~~~~~~~~~\n\n");
+                Console.WriteLine(currentResult.ToString());
+                combinedResults.Append(currentResult.ToString());
+                Console.WriteLine(pressToContinue);
                 Console.ReadKey();
                 breachCount++;
+            }
+
+            PromptSave(combinedResults);
+        }
+
+        private static void PromptSave(StringBuilder dataToSave)
+        {
+            bool choiceMade = false;
+
+            while (!choiceMade)
+            {
+                Console.Clear();
+                Console.WriteLine("Would you like to save your breach data to the desktop? [y/n]");
+                Console.Write("---> ");
+                string userChoice = Console.ReadLine().ToLower();
+
+                switch (userChoice)
+                {
+                    case "y":
+                        SaveData(dataToSave);
+                        choiceMade = true;
+                        break;
+                    case "n":
+                        Console.Clear();
+                        Console.WriteLine("Are you sure to want to exit without saving? [y/n]");
+                        Console.Write("---> ");
+                        choiceMade = (Console.ReadLine().ToLower() == "y");
+                        break;
+                    default:
+                        Console.Clear();
+                        Console.WriteLine("Unrecognized command. Please enter either \'y\' or \'n\'");
+                        Console.WriteLine(pressToContinue);
+                        Console.ReadKey();
+                        break;
+                }
+            }
+        }
+
+        private static void SaveData(StringBuilder dataToSave)
+        {
+            string date = DateTime.Now.ToString();
+            char[] invalidPathCharacters = Path.GetInvalidPathChars();
+            char[] invalidFileNameCharacters = Path.GetInvalidFileNameChars();
+            string fileName = $"Account Search - {accountName} - {date}.txt";
+            foreach (char character in invalidFileNameCharacters)
+                fileName = fileName.Replace(character, '-');
+            string filePath = Environment.ExpandEnvironmentVariables(@"%HOMEPATH%\Desktop\") + fileName;
+            foreach (char character in invalidPathCharacters)
+                filePath = filePath.Replace(character, '-');
+
+            using (StreamWriter saver = new StreamWriter(new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
+            {
+                StringReader reader = new StringReader(dataToSave.ToString());
+                string line = string.Empty;
+                while ((line = reader.ReadLine()) != null)
+                {
+                    saver.WriteLine(line);
+                }
             }
         }
     }
