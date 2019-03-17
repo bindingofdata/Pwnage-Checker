@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -17,12 +18,27 @@ namespace PwnCoreC
         {
             PwndVM = new PwndVM();
             accountName = string.Empty;
-
             bool exitApplication = false;
+
+            if (args.Length > 0)
+                exitApplication = GetAccountInfoAndSave(args[0]);
+
             while (!exitApplication)
             {
                 exitApplication = MainMenu();
             }
+        }
+
+        private static bool GetAccountInfoAndSave(string accountName)
+        {
+            bool lookupSucceeded = false;
+
+            PwndVM.GetBreaches(accountName, false);
+            List<string> results = BuildResults();
+            SaveData(results);
+            lookupSucceeded = true;
+
+            return lookupSucceeded;
         }
 
         private static bool MainMenu()
@@ -35,7 +51,8 @@ namespace PwnCoreC
             message.Append("1. Check [U]sername/Email\n");
             message.Append("2. Check [P]assword\n");
             message.Append("3. [H]elp\n");
-            message.Append("4. [E]xit\n");
+            message.Append("4. [M]ore Info\n");
+            message.Append("5. [E]xit\n");
             message.Append("--> ");
             Console.Write(message.ToString());
 
@@ -59,6 +76,11 @@ namespace PwnCoreC
                     DisplayHelp();
                     break;
                 case "4":
+                case "m":
+                case "a": // for people who think "additional info" like I do.  :)
+                    DisplayAdditionalInfo();
+                    break;
+                case "5":
                 case "e":
                 case "q":
                     exitApplication = true;
@@ -73,9 +95,20 @@ namespace PwnCoreC
             return exitApplication;
         }
 
+        private static void DisplayAdditionalInfo()
+        {
+            Console.Clear();
+            Console.WriteLine("I haven't written the additional info yet, sorry!");
+            Console.WriteLine(pressToContinue);
+            Console.ReadKey();
+        }
+
         private static void DisplayHelp()
         {
-            throw new NotImplementedException();
+            Console.Clear();
+            Console.WriteLine("I haven't written the help yet, sorry!");
+            Console.WriteLine(pressToContinue);
+            Console.ReadKey();
         }
 
         private static void LookupPassword()
@@ -138,13 +171,27 @@ namespace PwnCoreC
                 return;
             }
 
+            List<string> results = BuildResults();
+
+            foreach (string result in results)
+            {
+                Console.Clear();
+                Console.Write(result);
+                Console.WriteLine(pressToContinue);
+                Console.ReadKey();
+            }
+
+            PromptSave(results);
+        }
+
+        private static List<string> BuildResults()
+        {
             StringBuilder currentResult = new StringBuilder();
-            StringBuilder combinedResults = new StringBuilder();
+            List<string> combinedResults = new List<string>();
             int breachCount = 1;
 
             foreach (Breach breach in PwndVM.Breaches)
             {
-                Console.Clear();
                 currentResult.Clear();
                 currentResult.AppendFormat("~~~ Breach #{0}/{1} - {2} ~~~\n", breachCount, PwndVM.Breaches.Count, breach.Title);
                 currentResult.AppendFormat("Site Name: {0}\n", breach.Name);
@@ -156,19 +203,16 @@ namespace PwnCoreC
                 {
                     currentResult.AppendFormat("---> {0}\n", dataItem);
                 }
-                currentResult.AppendFormat("Breach Verified: {0}\n", breach.IsVerified ? "True" : "False" );
+                currentResult.AppendFormat("Breach Verified: {0}\n", breach.IsVerified ? "True" : "False");
                 currentResult.AppendFormat("~~~~~~~~~~~~~~~~~~~~~~\n\n");
-                Console.WriteLine(currentResult.ToString());
-                combinedResults.Append(currentResult.ToString());
-                Console.WriteLine(pressToContinue);
-                Console.ReadKey();
+                combinedResults.Add(currentResult.ToString());
                 breachCount++;
             }
 
-            PromptSave(combinedResults);
+            return combinedResults;
         }
 
-        private static void PromptSave(StringBuilder dataToSave)
+        private static void PromptSave(List<string> dataToSave)
         {
             bool choiceMade = false;
 
@@ -201,7 +245,7 @@ namespace PwnCoreC
             }
         }
 
-        private static void SaveData(StringBuilder dataToSave)
+        private static void SaveData(List<string> dataToSave)
         {
             string date = DateTime.Now.ToString();
             char[] invalidPathCharacters = Path.GetInvalidPathChars();
@@ -215,11 +259,9 @@ namespace PwnCoreC
 
             using (StreamWriter saver = new StreamWriter(new FileStream(filePath, FileMode.OpenOrCreate, FileAccess.ReadWrite)))
             {
-                StringReader reader = new StringReader(dataToSave.ToString());
-                string line = string.Empty;
-                while ((line = reader.ReadLine()) != null)
+                foreach (string result in dataToSave)
                 {
-                    saver.WriteLine(line);
+                    saver.WriteLine(result);
                 }
             }
         }
