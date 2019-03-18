@@ -1,7 +1,7 @@
 # Pwnage-Checker
 .Net Core library and applications for testing usernames and passwords against the [haveibeenpwnd API](https://haveibeenpwned.com/API/v2).
 
-### PwndCoreC
+### PwnCoreC
 .Net Core commandline application for interfacing with the haveibeenpwnd API.
 Supports looking up username/email breaches and saving the data to disk.
 Supports looking up passwords and displays the number of occurances in the data set.
