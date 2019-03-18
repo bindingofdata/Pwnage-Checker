@@ -8,7 +8,7 @@ using PwndAPILib.ViewModel;
 
 namespace PwnCoreC
 {
-    internal class Program
+    internal static class Program
     {
         private static PwndVM PwndVM;
         private const string pressToContinue = "press any key to continue...";
@@ -31,14 +31,11 @@ namespace PwnCoreC
 
         private static bool GetAccountInfoAndSave(string accountName)
         {
-            bool lookupSucceeded = false;
-
             PwndVM.GetBreaches(accountName, false);
             List<string> results = BuildResults();
             SaveData(results);
-            lookupSucceeded = true;
 
-            return lookupSucceeded;
+            return true;
         }
 
         private static bool MainMenu()
