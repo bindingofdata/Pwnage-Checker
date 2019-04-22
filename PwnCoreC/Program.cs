@@ -130,6 +130,9 @@ namespace PwnCoreC
                 }
             } while (keyInfo.Key != ConsoleKey.Enter);
 
+            Console.Clear();
+            Console.WriteLine("Looking up password...");
+
             PwndVM.CheckPassword(password, false);
         }
 
@@ -138,7 +141,7 @@ namespace PwnCoreC
             Console.Clear();
 
             if (PwndVM.PasswordMatch)
-                Console.WriteLine($"Your password was found " + PwndVM.Passwords[0].OccuranceCount + " times.");
+                Console.WriteLine("Your password was found " + PwndVM.PasswordOccurrences + " times.");
             else
                 Console.WriteLine("Your password was not found! Congrats!");
 
@@ -152,6 +155,9 @@ namespace PwnCoreC
             Console.WriteLine("Enter the username or email address to look up.");
             Console.Write("---> ");
             accountName = Console.ReadLine();
+
+            Console.Clear();
+            Console.WriteLine("Looking up email...");
 
             PwndVM.GetBreaches(accountName, false);
         }
@@ -218,9 +224,8 @@ namespace PwnCoreC
                 Console.Clear();
                 Console.WriteLine("Would you like to save your breach data to the desktop? [y/n]");
                 Console.Write("---> ");
-                string userChoice = Console.ReadLine().ToLower();
 
-                switch (userChoice)
+                switch (Console.ReadLine().ToLower())
                 {
                     case "y":
                         SaveData(dataToSave);
@@ -230,7 +235,7 @@ namespace PwnCoreC
                         Console.Clear();
                         Console.WriteLine("Are you sure to want to exit without saving? [y/n]");
                         Console.Write("---> ");
-                        choiceMade = (Console.ReadLine().ToLower() == "y");
+                        choiceMade = string.Equals(Console.ReadLine(), "y", StringComparison.OrdinalIgnoreCase);
                         break;
                     default:
                         Console.Clear();

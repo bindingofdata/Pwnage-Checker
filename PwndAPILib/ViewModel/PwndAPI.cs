@@ -27,7 +27,7 @@ namespace PwndAPILib.ViewModel
             using (HttpClient client = new HttpClient())
             {
                 client.DefaultRequestHeaders.Add("User-Agent", USER_AGENT);
-                HttpResponseMessage response = await client.GetAsync(url);
+                HttpResponseMessage response = await client.GetAsync(url).ConfigureAwait(false);
                 response.EnsureSuccessStatusCode();
                 string json = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 
@@ -56,24 +56,30 @@ namespace PwndAPILib.ViewModel
             return breaches;
         }
 
-        public static async Task<List<PwndPassword>> GetPwndPasswordsAsync(string password)
+        public static async Task<Dictionary<string, string>> GetPwndPasswordsAsync(string password)
         {
             throw new NotImplementedException();
         }
 
-        public static List<PwndPassword> GetPwndPasswords(string password)
+        public static string GetPasswordHash(string password)
         {
-            List<PwndPassword> passwords = new List<PwndPassword>();
             SHA1 hasher = SHA1.Create();
             byte[] passwordBytes = Encoding.UTF8.GetBytes(password);
             byte[] hashedBytes = hasher.ComputeHash(passwordBytes);
+
             StringBuilder hashConverter = new StringBuilder();
             foreach (byte b in hashedBytes)
                 hashConverter.Append(b.ToString("x2"));
-            string hashedPassword = hashConverter.ToString().ToUpper();
-            passwords.Add(new PwndPassword() { Hash = hashedPassword, OccuranceCount = -1 });
-            string hashPrefix = hashedPassword.Substring(0, 5);
-            string url = BASE_PASSWORD_URL + hashPrefix;
+
+            return hashConverter.Length > 0 ? hashConverter.ToString().ToUpper() : string.Empty;
+        }
+
+        public static Dictionary<string,string> GetPwndPasswords(string passwordHash)
+        {
+            Dictionary<string,string> passwords = new Dictionary<string,string>();
+            string passwordHashPrefix = passwordHash.Substring(0, 5).ToUpper();
+
+            string url = BASE_PASSWORD_URL + passwordHashPrefix;
 
             using (HttpClient client = new HttpClient())
             {
@@ -82,23 +88,11 @@ namespace PwndAPILib.ViewModel
                 response.EnsureSuccessStatusCode();
                 StringReader reader = new StringReader(response.Content.ReadAsStringAsync().Result);
                 string line = string.Empty;
+
                 while ((line = reader.ReadLine()) != null)
                 {
                     string[] result = line.Split(':');
-                    PwndPassword currentPassword;
-                    if (result.Length > 1)
-                        currentPassword = new PwndPassword()
-                        {
-                            Hash = hashPrefix + result[0],
-                            OccuranceCount = int.Parse(result[1])
-                        };
-                    else
-                        currentPassword = new PwndPassword() { Hash = "ERROR", OccuranceCount = 0 };
-
-                    if (currentPassword.Hash == passwords[0].Hash)
-                        passwords[0].OccuranceCount = currentPassword.OccuranceCount;
-                    else
-                        passwords.Add(currentPassword);
+                    passwords.Add(result[0], result[1]);
                 }
             }
 
