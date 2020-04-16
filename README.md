@@ -29,4 +29,4 @@ TBD
 
 ## Authors
 
-* **Hunter Curren** - *Initial work* - [hcurren](https://github.com/hcurren)
+* **Hunter Curren** - *Initial work* - [hcurren](https://github.com/bindingofdata)
